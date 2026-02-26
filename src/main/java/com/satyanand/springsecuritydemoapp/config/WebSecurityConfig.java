@@ -23,32 +23,32 @@ public class WebSecurityConfig {
 
         httpSecurity
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/posts").permitAll()
+                        .requestMatchers("/posts", "/auth/**").permitAll()
                         .requestMatchers("/posts/**").hasAnyRole("ADMIN")
                         .anyRequest().authenticated())
-//                .csrf(csrfconfig -> csrfconfig.disable())
-                .formLogin(Customizer.withDefaults());
+                .csrf(csrfconfig -> csrfconfig.disable());
+//                .formLogin(Customizer.withDefaults());
 
         return httpSecurity.build();
     }
 
-    @Bean
-    public UserDetailsService inMemoryUserDetailsService() {
-        UserDetails normalUser = User
-                .withUsername("Satya")
-                .password(passwordEncoder().encode("Password"))
-                .roles("USER")
-                .build();
-
-        UserDetails adminUser = User
-                .withUsername("SatyaAdmin")
-                .password(passwordEncoder().encode("pass123"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(normalUser, adminUser);
-
-    }
+//    @Bean
+//    public UserDetailsService inMemoryUserDetailsService() {
+//        UserDetails normalUser = User
+//                .withUsername("Satya")
+//                .password(passwordEncoder().encode("Password"))
+//                .roles("USER")
+//                .build();
+//
+//        UserDetails adminUser = User
+//                .withUsername("SatyaAdmin")
+//                .password(passwordEncoder().encode("pass123"))
+//                .roles("ADMIN")
+//                .build();
+//
+//        return new InMemoryUserDetailsManager(normalUser, adminUser);
+//
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder(){
