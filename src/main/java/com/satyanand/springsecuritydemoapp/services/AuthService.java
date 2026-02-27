@@ -14,8 +14,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class AuthService {
     private final SessionRepository sessionRepository;
 
 
+    @Transactional
     public String login(LoginDTO loginDTO) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword())
@@ -35,12 +38,16 @@ public class AuthService {
         User user = (User) authentication.getPrincipal();
 
         String token = jwtService.generateAccessToken(user);
+        List<Session> sessions = sessionRepository.findByUserOrderByLastUsedAtAsc(user);
+        if(sessions.size() >= 2){
+            sessionRepository.delete(sessions.get(0));
+        }
 
-        sessionRepository.deleteByUserId(user.getId());
 
         Session session = Session.builder()
                 .token(token)
                 .createdAt(LocalDateTime.now())
+                .lastUsedAt(LocalDateTime.now())
                 .user(user)
                 .build();
 

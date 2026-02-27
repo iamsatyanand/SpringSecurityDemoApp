@@ -2,6 +2,7 @@ package com.satyanand.springsecuritydemoapp.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
@@ -21,7 +22,9 @@ public class Session {
 
     private LocalDateTime createdAt;
 
-    @OneToOne
+    private LocalDateTime lastUsedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
