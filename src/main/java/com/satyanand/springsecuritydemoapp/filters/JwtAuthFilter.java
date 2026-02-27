@@ -1,8 +1,10 @@
 package com.satyanand.springsecuritydemoapp.filters;
 
 import com.satyanand.springsecuritydemoapp.entities.User;
+import com.satyanand.springsecuritydemoapp.repositories.SessionRepository;
 import com.satyanand.springsecuritydemoapp.services.JwtService;
 import com.satyanand.springsecuritydemoapp.services.UserService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,17 +24,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserService userService;
     private final HandlerExceptionResolver handlerExceptionResolver;
+    private final SessionRepository sessionRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try{
             String requestTokenHeader = request.getHeader("Authorization");
-            if(requestTokenHeader == null || !requestTokenHeader.startsWith("Bearer")){
+            if(requestTokenHeader == null || !requestTokenHeader.startsWith("Bearer ")){
                 filterChain.doFilter(request, response);
                 return;
             }
 
             String token = requestTokenHeader.split("Bearer ")[1];
+
+            if(!jwtService.isValidToken(token)){
+                throw new JwtException("Invalid token");
+            }
+
+            if(!sessionRepository.existsByToken(token)){
+                throw new RuntimeException("Session expired");
+            }
 
             Long userId = jwtService.getUserIdFromToken(token);
 
@@ -47,6 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (Exception exception) {
             handlerExceptionResolver.resolveException(request, response, null, exception);
+            return;
         }
 
 

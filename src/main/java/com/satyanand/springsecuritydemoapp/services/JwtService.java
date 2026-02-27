@@ -18,6 +18,9 @@ public class JwtService {
     @Value("${jwt.secret_key}")
     private String  jwtSecretKey;
 
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpiration;
+
     private SecretKey getSecretKey(){
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
@@ -29,19 +32,30 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .claim("roles", Set.of("ADMIN", "USER"))
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
+                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
                 .signWith(getSecretKey())
                 .compact();
 
     }
 
-    public Long getUserIdFromToken(String token){
-        Claims claims = Jwts.parser()
+    public Claims extractClaims(String token){
+        return Jwts.parser()
                 .verifyWith(getSecretKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
 
-        return Long.valueOf(claims.getSubject());
+    public Long getUserIdFromToken(String token){
+        return Long.valueOf(extractClaims(token).getSubject());
+    }
+
+    public boolean isValidToken(String token){
+        try{
+            extractClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
