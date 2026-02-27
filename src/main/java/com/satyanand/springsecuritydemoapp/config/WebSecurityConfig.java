@@ -1,6 +1,7 @@
 package com.satyanand.springsecuritydemoapp.config;
 
 import com.satyanand.springsecuritydemoapp.filters.JwtAuthFilter;
+import com.satyanand.springsecuritydemoapp.filters.LoggingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final LoggingFilter loggingFilter;
 
 
     @Bean
@@ -33,7 +35,8 @@ public class WebSecurityConfig {
 //                        .requestMatchers("/posts/**").hasAnyRole("ADMIN")
                         .anyRequest().authenticated())
                 .csrf(csrfconfig -> csrfconfig.disable())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(loggingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthFilter, LoggingFilter.class);
 //                .formLogin(Customizer.withDefaults());
 
         return httpSecurity.build();
