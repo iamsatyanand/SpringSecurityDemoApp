@@ -120,4 +120,13 @@ public class AuthService {
                 .refreshToken(newRefreshToken)
                 .build();
     }
+
+    @Transactional
+    public void logout(String accessToken){
+        Session session = sessionRepository.findByAccessToken(accessToken).orElseThrow(
+                () -> new JwtException("Session expired")
+        );
+
+        sessionRepository.delete(session);
+    }
 }
