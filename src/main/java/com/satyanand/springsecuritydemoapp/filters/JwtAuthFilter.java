@@ -44,9 +44,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 throw new JwtException("Invalid token");
             }
 
-            Session session = sessionRepository.findByToken(token).orElseThrow(() -> new RuntimeException("Session expired"));
-            session.setLastUsedAt(LocalDateTime.now());
-            sessionRepository.save(session);
+            Session session = sessionRepository.findByAccessToken(token).orElseThrow(() -> new RuntimeException("Session expired"));
+            // To reduce DB writes
+            if (session.getLastUsedAt().isBefore(LocalDateTime.now().minusMinutes(5))) {
+                session.setLastUsedAt(LocalDateTime.now());
+                sessionRepository.save(session);
+            }
+
 
             Long userId = jwtService.getUserIdFromToken(token);
 

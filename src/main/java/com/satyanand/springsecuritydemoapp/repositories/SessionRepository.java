@@ -18,7 +18,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     boolean existsByToken(String token);
 
-    Optional<Session> findByToken(String token);
+    Optional<Session> findByAccessToken(String token);
 
     @Transactional
     @Modifying
@@ -26,4 +26,6 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     void deleteByUserId(@Param("user_id") Long user_id);
 
     List<Session> findByUserOrderByLastUsedAtAsc(User user);
+
+    Optional<Session> findByRefreshToken( String refreshToken);
 }

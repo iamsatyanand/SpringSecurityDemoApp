@@ -18,7 +18,10 @@ public class Session {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String token;
+    private String accessToken;
+
+    @Column(unique = true, nullable = false)
+    private String refreshToken;
 
     private LocalDateTime createdAt;
 

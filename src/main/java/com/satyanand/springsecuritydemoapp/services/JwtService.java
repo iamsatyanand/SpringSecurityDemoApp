@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Set;
 
@@ -20,6 +21,9 @@ public class JwtService {
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
 
     private SecretKey getSecretKey(){
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
@@ -36,6 +40,15 @@ public class JwtService {
                 .signWith(getSecretKey())
                 .compact();
 
+    }
+
+    public String generateRefreshToken(User user){
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+                .signWith(getSecretKey())
+                .compact();
     }
 
     public Claims extractClaims(String token){
