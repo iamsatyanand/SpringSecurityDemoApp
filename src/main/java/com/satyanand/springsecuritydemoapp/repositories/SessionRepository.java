@@ -16,7 +16,7 @@ import java.util.Optional;
 @Repository
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
-    boolean existsByToken(String token);
+    boolean existsByRefreshToken(String token);
 
     Optional<Session> findByAccessToken(String token);
 

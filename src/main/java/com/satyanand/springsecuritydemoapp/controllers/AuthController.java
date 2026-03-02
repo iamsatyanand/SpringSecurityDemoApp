@@ -37,11 +37,11 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request,
                                         HttpServletResponse response){
 
-        LoginResponseDTO token = authService.login(loginDTO);
+        LoginResponseDTO token = authService.login(loginDTO, response);
 
-        Cookie cookie = new Cookie("refreshToken", token.getRefreshToken());
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
+//        Cookie cookie = new Cookie("refreshToken", token.getRefreshToken());
+//        cookie.setHttpOnly(true);
+//        response.addCookie(cookie);
         return ResponseEntity.ok(token);
     }
 
