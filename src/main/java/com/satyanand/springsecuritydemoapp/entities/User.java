@@ -24,8 +24,14 @@ public class User extends AuditableEntity implements UserDetails {
 
     @Column(unique = true)
     private String email;
+
+    @Column(nullable = true)
     private String password;
+
     private String name;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAuthProvider> authProviders;
 
 
     @Override

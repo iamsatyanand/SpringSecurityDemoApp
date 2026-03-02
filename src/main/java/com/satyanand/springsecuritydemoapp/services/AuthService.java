@@ -129,4 +129,9 @@ public class AuthService {
 
         sessionRepository.delete(session);
     }
+
+    @Transactional
+    public void logoutAll(Long userId) {
+        sessionRepository.deleteByUserId(userId);
+    }
 }
