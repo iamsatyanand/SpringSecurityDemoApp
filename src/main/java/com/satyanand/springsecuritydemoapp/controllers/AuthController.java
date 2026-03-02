@@ -4,6 +4,7 @@ import com.satyanand.springsecuritydemoapp.dto.LoginDTO;
 import com.satyanand.springsecuritydemoapp.dto.LoginResponseDTO;
 import com.satyanand.springsecuritydemoapp.dto.SignupDTO;
 import com.satyanand.springsecuritydemoapp.dto.UserDTO;
+import com.satyanand.springsecuritydemoapp.entities.User;
 import com.satyanand.springsecuritydemoapp.services.AuthService;
 import com.satyanand.springsecuritydemoapp.services.JwtService;
 import com.satyanand.springsecuritydemoapp.services.UserService;
@@ -14,7 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -24,9 +28,9 @@ import java.util.Arrays;
 @RequestMapping("/auth")
 public class AuthController {
 
+    private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final AuthService authService;
-    private final JwtService jwtService;
 
     @PostMapping("/signup")
     public ResponseEntity<UserDTO> signUp(@RequestBody SignupDTO signupDTO){
@@ -37,12 +41,19 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request,
                                         HttpServletResponse response){
 
-        LoginResponseDTO token = authService.login(loginDTO, response);
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                loginDTO.getEmail(),
+                                loginDTO.getPassword()
+                        )
+                );
 
-//        Cookie cookie = new Cookie("refreshToken", token.getRefreshToken());
-//        cookie.setHttpOnly(true);
-//        response.addCookie(cookie);
-        return ResponseEntity.ok(token);
+        User user = (User) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                authService.createLoginSession(user, response)
+        );
     }
 
     @PostMapping("/refresh")

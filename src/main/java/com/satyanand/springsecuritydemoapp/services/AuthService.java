@@ -32,22 +32,20 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
     private final SessionRepository sessionRepository;
-    private final UserService userService;
     private final UserAuthProviderRepository userAuthProviderRepository;
 
 
-    @Transactional
-    public LoginResponseDTO login(LoginDTO loginDTO, HttpServletResponse response) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword())
-        );
-
-        User user = (User) authentication.getPrincipal();
-
-        return createLoginSession(user, response);
-    }
+//    @Transactional
+//    public LoginResponseDTO login(LoginDTO loginDTO, HttpServletResponse response) {
+//        Authentication authentication = authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword())
+//        );
+//
+//        User user = (User) authentication.getPrincipal();
+//
+//        return createLoginSession(user, response);
+//    }
 
     @Transactional
     public LoginResponseDTO socialLogin(
