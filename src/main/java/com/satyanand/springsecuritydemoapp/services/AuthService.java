@@ -2,11 +2,13 @@ package com.satyanand.springsecuritydemoapp.services;
 
 import com.satyanand.springsecuritydemoapp.dto.LoginDTO;
 import com.satyanand.springsecuritydemoapp.dto.LoginResponseDTO;
+import com.satyanand.springsecuritydemoapp.entities.PasswordResetToken;
 import com.satyanand.springsecuritydemoapp.entities.Session;
 import com.satyanand.springsecuritydemoapp.entities.User;
 import com.satyanand.springsecuritydemoapp.entities.UserAuthProvider;
 import com.satyanand.springsecuritydemoapp.entities.enums.AuthProvider;
 import com.satyanand.springsecuritydemoapp.exceptions.ResourceNotFoundException;
+import com.satyanand.springsecuritydemoapp.repositories.PasswordResetTokenRepository;
 import com.satyanand.springsecuritydemoapp.repositories.SessionRepository;
 import com.satyanand.springsecuritydemoapp.repositories.UserAuthProviderRepository;
 import com.satyanand.springsecuritydemoapp.repositories.UserRepository;
@@ -14,17 +16,20 @@ import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +39,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final SessionRepository sessionRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
-
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
 //    @Transactional
 //    public LoginResponseDTO login(LoginDTO loginDTO, HttpServletResponse response) {
@@ -186,6 +192,73 @@ public class AuthService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isEmpty()) {
+            return; // silent return
+        }
+
+        User user = optionalUser.get();
+
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String rawToken = UUID.randomUUID().toString();
+        String hash = DigestUtils.sha256Hex(rawToken);
+
+        PasswordResetToken token = PasswordResetToken.builder()
+                .tokenHash(hash)
+                .expiry(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .user(user)
+                .build();
+
+        passwordResetTokenRepository.save(token);
+
+        // send rawToken via email
+    }
+
+    @Transactional
+    public void resetPassword(String rawToken, String newPassword) {
+
+        String hash = DigestUtils.sha256Hex(rawToken);
+
+        PasswordResetToken token =
+                passwordResetTokenRepository.findByTokenHash(hash)
+                        .orElseThrow();
+
+        if (token.isUsed() ||
+                token.getExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Invalid token");
+        }
+
+        User user = token.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        token.setUsed(true);
+
+        logoutAll(user.getId());
+    }
+
+    @Transactional
+    public void changePassword(Long userId,
+                               String oldPassword,
+                               String newPassword) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow();
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Invalid old password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        logoutAll(userId);
     }
 
     @Transactional

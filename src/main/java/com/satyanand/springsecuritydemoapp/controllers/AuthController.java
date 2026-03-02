@@ -1,9 +1,7 @@
 package com.satyanand.springsecuritydemoapp.controllers;
 
-import com.satyanand.springsecuritydemoapp.dto.LoginDTO;
-import com.satyanand.springsecuritydemoapp.dto.LoginResponseDTO;
-import com.satyanand.springsecuritydemoapp.dto.SignupDTO;
-import com.satyanand.springsecuritydemoapp.dto.UserDTO;
+import com.satyanand.springsecuritydemoapp.auth.security.ForgotPasswordRateLimiter;
+import com.satyanand.springsecuritydemoapp.dto.*;
 import com.satyanand.springsecuritydemoapp.entities.User;
 import com.satyanand.springsecuritydemoapp.services.AuthService;
 import com.satyanand.springsecuritydemoapp.services.JwtService;
@@ -12,6 +10,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -31,6 +30,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final AuthService authService;
+    private final ForgotPasswordRateLimiter rateLimiter;
 
     @PostMapping("/signup")
     public ResponseEntity<UserDTO> signUp(@RequestBody SignupDTO signupDTO){
@@ -77,6 +77,45 @@ public class AuthController {
         String accessToken = header.substring(7);
         authService.logout(accessToken);
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        rateLimiter.validate(request.getEmail());
+
+        authService.forgotPassword(request.getEmail());
+
+        return ResponseEntity.ok("Reset link sent if email exists");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        authService.resetPassword(
+                request.getToken(),
+                request.getNewPassword()
+        );
+
+        return ResponseEntity.ok("Password reset successful");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        User user = (User) authentication.getPrincipal();
+
+        authService.changePassword(
+                user.getId(),
+                request.getOldPassword(),
+                request.getNewPassword()
+        );
+
+        return ResponseEntity.ok("Password changed successfully");
     }
 
 }
